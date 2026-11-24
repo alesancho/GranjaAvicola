@@ -58,7 +58,7 @@ class LoteDaoTest {
             pesoInicialG = 42.5,
             lineaGenetica = "Hy-Line Brown",
             proveedor = "Incubadora Central",
-            costoPorPollita = 3500.0,
+            costoPorPollita = 3500L,
             estado = EstadoLote.LEVANTE
         )
 
@@ -70,6 +70,7 @@ class LoteDaoTest {
         assertEquals(galponId, recuperado?.galponId)
         assertEquals(EstadoLote.LEVANTE, recuperado?.estado)
         assertEquals(4800, recuperado?.avesIniciales)
+        assertEquals(3500L, recuperado?.costoPorPollita)
     }
 
     @Test
@@ -87,7 +88,7 @@ class LoteDaoTest {
             pesoInicialG = 40.0,
             lineaGenetica = "Lohmann Brown",
             proveedor = "Prov A",
-            costoPorPollita = 3200.0,
+            costoPorPollita = 3200L,
             estado = EstadoLote.LEVANTE
         )
         val loteProduccion = Lote(
@@ -99,7 +100,7 @@ class LoteDaoTest {
             pesoInicialG = 41.0,
             lineaGenetica = "Lohmann Brown",
             proveedor = "Prov A",
-            costoPorPollita = 3200.0,
+            costoPorPollita = 3200L,
             estado = EstadoLote.PRODUCCION
         )
         val loteCerrado = Lote(
@@ -111,7 +112,7 @@ class LoteDaoTest {
             pesoInicialG = 41.0,
             lineaGenetica = "Lohmann Brown",
             proveedor = "Prov A",
-            costoPorPollita = 3000.0,
+            costoPorPollita = 3000L,
             estado = EstadoLote.CERRADO,
             fechaCierre = LocalDate.of(2025, 12, 31)
         )
@@ -141,7 +142,7 @@ class LoteDaoTest {
                 pesoInicialG = 42.0,
                 lineaGenetica = "Hy-Line Brown",
                 proveedor = "Prov B",
-                costoPorPollita = 3400.0,
+                costoPorPollita = 3400L,
                 estado = EstadoLote.LEVANTE
             )
         )
@@ -171,7 +172,7 @@ class LoteDaoTest {
                 pesoInicialG = 40.0,
                 lineaGenetica = "Hy-Line Brown",
                 proveedor = "Prov C",
-                costoPorPollita = 3300.0,
+                costoPorPollita = 3300L,
                 estado = EstadoLote.LEVANTE
             )
         )

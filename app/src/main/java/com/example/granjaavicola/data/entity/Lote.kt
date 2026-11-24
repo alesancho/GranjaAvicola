@@ -31,7 +31,7 @@ data class Lote(
     val pesoInicialG: Double,
     val lineaGenetica: String,
     val proveedor: String,
-    val costoPorPollita: Double,
+    val costoPorPollita: Long,
     val estado: EstadoLote,
     val fechaTraslado: LocalDate? = null,
     val fechaCierre: LocalDate? = null

@@ -54,7 +54,7 @@ class RegistroDiarioDaoTest {
                 pesoInicialG = 42.0,
                 lineaGenetica = "Hy-Line Brown",
                 proveedor = "Proveedor",
-                costoPorPollita = 3500.0,
+                costoPorPollita = 3500L,
                 estado = EstadoLote.LEVANTE
             )
         )

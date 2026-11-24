@@ -141,7 +141,7 @@ class RegistroDiarioDaoTest {
     }
 
     @Test
-    fun restriccionUnicidadPorLoteYFecha() = runBlocking {
+    fun restriccionUnicidadPorLoteYFecha(): Unit = runBlocking {
         val fecha = LocalDate.of(2026, 1, 10)
         val r1 = RegistroDiario(
             loteId = loteId,

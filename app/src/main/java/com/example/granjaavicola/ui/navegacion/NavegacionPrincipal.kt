@@ -26,6 +26,7 @@ import com.example.granjaavicola.ui.levante.FormularioLoteScreen
 import com.example.granjaavicola.ui.levante.LotesScreen
 import com.example.granjaavicola.ui.levante.LotesViewModel
 import com.example.granjaavicola.ui.produccion.RegistroScreen
+import com.example.granjaavicola.ui.produccion.RegistroViewModel
 
 // Rutas adicionales para el módulo de lotes
 private const val RUTA_NUEVO_LOTE = "nuevo_lote"
@@ -53,6 +54,14 @@ fun NavegacionPrincipal() {
         factory = LotesViewModel.factory(
             loteRepository = container.loteRepository,
             galponRepository = container.galponRepository
+        )
+    )
+    val registroViewModel: RegistroViewModel = viewModel(
+        factory = RegistroViewModel.factory(
+            loteRepository = container.loteRepository,
+            registroDiarioRepository = container.registroDiarioRepository,
+            produccionHuevoRepository = container.produccionHuevoRepository,
+            db = container.database
         )
     )
 
@@ -100,7 +109,19 @@ fun NavegacionPrincipal() {
                 InicioScreen()
             }
             composable(DestinoNavegacion.REGISTRO.ruta) {
-                RegistroScreen()
+                RegistroScreen(
+                    viewModel = registroViewModel,
+                    onIrALotes = {
+                        navController.navigate(DestinoNavegacion.LOTES.ruta) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
             composable(DestinoNavegacion.LOTES.ruta) {
                 LotesScreen(

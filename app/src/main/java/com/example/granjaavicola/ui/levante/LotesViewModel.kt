@@ -9,6 +9,7 @@ import com.example.granjaavicola.data.entity.Lote
 import com.example.granjaavicola.data.repository.GalponRepository
 import com.example.granjaavicola.data.repository.LoteRepository
 import com.example.granjaavicola.domain.calculos.edadEnSemanas
+import com.example.granjaavicola.domain.calculos.validarFechaTraslado
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -85,7 +86,10 @@ data class DetalleLoteUiState(
     val cargando: Boolean = true,
     val mostrandoConfirmacionCierre: Boolean = false,
     val cerradoExitoso: Boolean = false,
-    val errorCierre: String? = null
+    val errorCierre: String? = null,
+    val mostrandoDialogoTraslado: Boolean = false,
+    val fechaTrasladoSeleccionada: LocalDate = LocalDate.now(),
+    val errorTraslado: String? = null
 )
 
 // ─── ViewModel ───────────────────────────────────────────────────────────────
@@ -371,6 +375,54 @@ class LotesViewModel(
 
     fun mostrarConfirmacionCierre(mostrar: Boolean) {
         _detalleState.value = _detalleState.value.copy(mostrandoConfirmacionCierre = mostrar)
+    }
+
+    fun mostrarDialogoTraslado(mostrar: Boolean) {
+        _detalleState.value = _detalleState.value.copy(
+            mostrandoDialogoTraslado = mostrar,
+            fechaTrasladoSeleccionada = if (mostrar) LocalDate.now() else _detalleState.value.fechaTrasladoSeleccionada,
+            errorTraslado = null
+        )
+    }
+
+    fun actualizarFechaTraslado(fecha: LocalDate) {
+        val loteActual = _detalleState.value.lote
+        val error = loteActual?.let { validarFechaTraslado(fecha, it.fechaLlegada) }
+        _detalleState.value = _detalleState.value.copy(
+            fechaTrasladoSeleccionada = fecha,
+            errorTraslado = error
+        )
+    }
+
+    fun confirmarTrasladoAProduccion() {
+        val estadoActual = _detalleState.value
+        val loteActual = estadoActual.lote ?: return
+        if (loteActual.estado != EstadoLote.LEVANTE) return
+
+        val error = validarFechaTraslado(estadoActual.fechaTrasladoSeleccionada, loteActual.fechaLlegada)
+        if (error != null) {
+            _detalleState.value = estadoActual.copy(errorTraslado = error)
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                loteRepository.update(
+                    loteActual.copy(
+                        estado = EstadoLote.PRODUCCION,
+                        fechaTraslado = estadoActual.fechaTrasladoSeleccionada
+                    )
+                )
+                _detalleState.value = _detalleState.value.copy(
+                    mostrandoDialogoTraslado = false,
+                    errorTraslado = null
+                )
+            } catch (e: Exception) {
+                _detalleState.value = _detalleState.value.copy(
+                    errorTraslado = "Error al trasladar el lote: ${e.message}"
+                )
+            }
+        }
     }
 
     fun cerrarLote() {

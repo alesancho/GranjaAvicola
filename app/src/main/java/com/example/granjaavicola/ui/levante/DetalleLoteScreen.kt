@@ -1,5 +1,7 @@
 package com.example.granjaavicola.ui.levante
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -24,6 +27,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,6 +36,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -174,6 +182,9 @@ fun DetalleLoteScreen(
                             FilaDato("Proveedor", lote.proveedor)
                         }
                         FilaDato("Costo por pollita", formatearCOP(lote.costoPorPollita))
+                        if (lote.fechaTraslado != null) {
+                            FilaDato("Fecha de traslado", formatearFecha(lote.fechaTraslado))
+                        }
                         if (lote.fechaCierre != null) {
                             FilaDato("Fecha de cierre", formatearFecha(lote.fechaCierre))
                         }
@@ -189,6 +200,28 @@ fun DetalleLoteScreen(
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyLarge
                     )
+                }
+            }
+
+            // ── Botón trasladar a producción (solo LEVANTE) ───────────────────
+            if (lote.estado == EstadoLote.LEVANTE) {
+                item {
+                    Button(
+                        onClick = { viewModel.mostrarDialogoTraslado(true) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Text(
+                            text = "Trasladar a producción",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
@@ -252,6 +285,87 @@ fun DetalleLoteScreen(
                     Text("Cancelar", style = MaterialTheme.typography.titleMedium)
                 }
             }
+        )
+    }
+
+    // ── Diálogo de traslado a producción ──────────────────────────────────────
+    var mostrarDatePickerTraslado by rememberSaveable { mutableStateOf(false) }
+
+    if (estado.mostrandoDialogoTraslado) {
+        val interactionSource = remember { MutableInteractionSource() }
+        LaunchedEffect(interactionSource) {
+            interactionSource.interactions.collect { interaction ->
+                if (interaction is PressInteraction.Release) {
+                    mostrarDatePickerTraslado = true
+                }
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { viewModel.mostrarDialogoTraslado(false) },
+            title = {
+                Text(
+                    "Trasladar a producción",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "Selecciona la fecha en que el lote inicia producción.",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    OutlinedTextField(
+                        value = formatearFecha(estado.fechaTrasladoSeleccionada),
+                        onValueChange = {},
+                        readOnly = true,
+                        interactionSource = interactionSource,
+                        label = { Text("Fecha de traslado", style = MaterialTheme.typography.bodyLarge) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 56.dp),
+                        trailingIcon = {
+                            IconButton(onClick = { mostrarDatePickerTraslado = true }) {
+                                Icon(Icons.Default.DateRange, contentDescription = "Seleccionar fecha de traslado")
+                            }
+                        },
+                        isError = estado.errorTraslado != null,
+                        supportingText = estado.errorTraslado?.let {
+                            { Text(it, color = MaterialTheme.colorScheme.error) }
+                        },
+                        textStyle = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = viewModel::confirmarTrasladoAProduccion,
+                    modifier = Modifier.defaultMinSize(minHeight = 56.dp)
+                ) {
+                    Text("Confirmar", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.mostrarDialogoTraslado(false) },
+                    modifier = Modifier.defaultMinSize(minHeight = 56.dp)
+                ) {
+                    Text("Cancelar", style = MaterialTheme.typography.titleMedium)
+                }
+            }
+        )
+    }
+
+    if (mostrarDatePickerTraslado) {
+        DialogoFecha(
+            titulo = "Fecha de traslado",
+            fechaInicial = estado.fechaTrasladoSeleccionada,
+            onConfirmar = { fecha ->
+                viewModel.actualizarFechaTraslado(fecha)
+                mostrarDatePickerTraslado = false
+            },
+            onCancelar = { mostrarDatePickerTraslado = false }
         )
     }
 }

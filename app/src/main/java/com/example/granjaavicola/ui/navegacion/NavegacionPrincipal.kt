@@ -10,16 +10,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.granjaavicola.GranjaApp
 import com.example.granjaavicola.ui.finanzas.FinanzasScreen
 import com.example.granjaavicola.ui.informes.InformesScreen
 import com.example.granjaavicola.ui.inicio.InicioScreen
+import com.example.granjaavicola.ui.levante.DetalleLoteScreen
+import com.example.granjaavicola.ui.levante.FormularioLoteScreen
 import com.example.granjaavicola.ui.levante.LotesScreen
+import com.example.granjaavicola.ui.levante.LotesViewModel
 import com.example.granjaavicola.ui.produccion.RegistroScreen
+
+// Rutas adicionales para el módulo de lotes
+private const val RUTA_NUEVO_LOTE = "nuevo_lote"
+private const val RUTA_DETALLE_LOTE = "detalle_lote/{loteId}"
+private fun rutaDetalleLote(id: Long) = "detalle_lote/$id"
 
 // Pantalla contenedora principal con barra de navegación inferior
 @Composable
@@ -28,35 +39,54 @@ fun NavegacionPrincipal() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val rutaActual = navBackStackEntry?.destination?.route
 
+    // Destinos de la barra inferior (sólo los que tienen ícono)
+    val destinosBarraInferior = DestinoNavegacion.entries
+
+    // Determinar si la barra inferior debe ocultarse (en sub-pantallas de lotes)
+    val mostrarBarraInferior = rutaActual != RUTA_NUEVO_LOTE &&
+        rutaActual?.startsWith("detalle_lote/") != true
+
+    // Instanciar el ViewModel una sola vez para todo el módulo de lotes
+    val context = LocalContext.current
+    val container = (context.applicationContext as GranjaApp).container
+    val lotesViewModel: LotesViewModel = viewModel(
+        factory = LotesViewModel.factory(
+            loteRepository = container.loteRepository,
+            galponRepository = container.galponRepository
+        )
+    )
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar {
-                DestinoNavegacion.entries.forEach { destino ->
-                    val seleccionado = rutaActual == destino.ruta
-                    NavigationBarItem(
-                        selected = seleccionado,
-                        onClick = {
-                            if (!seleccionado) {
-                                navController.navigate(destino.ruta) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+            if (mostrarBarraInferior) {
+                NavigationBar {
+                    destinosBarraInferior.forEach { destino ->
+                        val seleccionado = rutaActual == destino.ruta
+                        NavigationBarItem(
+                            selected = seleccionado,
+                            onClick = {
+                                if (!seleccionado) {
+                                    navController.navigate(destino.ruta) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = destino.icono,
+                                    contentDescription = destino.titulo
+                                )
+                            },
+                            label = {
+                                Text(text = destino.titulo)
                             }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = destino.icono,
-                                contentDescription = destino.titulo
-                            )
-                        },
-                        label = {
-                            Text(text = destino.titulo)
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -73,7 +103,28 @@ fun NavegacionPrincipal() {
                 RegistroScreen()
             }
             composable(DestinoNavegacion.LOTES.ruta) {
-                LotesScreen()
+                LotesScreen(
+                    viewModel = lotesViewModel,
+                    onNuevoLote = { navController.navigate(RUTA_NUEVO_LOTE) },
+                    onDetalleLote = { id -> navController.navigate(rutaDetalleLote(id)) },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            composable(RUTA_NUEVO_LOTE) {
+                FormularioLoteScreen(
+                    viewModel = lotesViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            composable(RUTA_DETALLE_LOTE) { backStackEntry ->
+                val loteId = backStackEntry.arguments?.getString("loteId")?.toLongOrNull() ?: return@composable
+                DetalleLoteScreen(
+                    loteId = loteId,
+                    viewModel = lotesViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
             composable(DestinoNavegacion.FINANZAS.ruta) {
                 FinanzasScreen()

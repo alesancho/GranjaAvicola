@@ -10,10 +10,12 @@ import com.example.granjaavicola.data.repository.GalponRepository
 import com.example.granjaavicola.data.repository.LoteRepository
 import com.example.granjaavicola.domain.calculos.edadEnSemanas
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -248,12 +250,19 @@ class LotesViewModel(
             _formularioState.value = _formularioState.value.copy(errorGalpon = "Selecciona un galpón")
             valido = false
         }
+        val hoy = LocalDate.now()
         if (estado.fechaNacimiento == null) {
             _formularioState.value = _formularioState.value.copy(errorFechaNacimiento = "Selecciona la fecha de nacimiento")
+            valido = false
+        } else if (estado.fechaNacimiento.isAfter(hoy)) {
+            _formularioState.value = _formularioState.value.copy(errorFechaNacimiento = "La fecha de nacimiento no puede ser futura")
             valido = false
         }
         if (estado.fechaLlegada == null) {
             _formularioState.value = _formularioState.value.copy(errorFechaLlegada = "Selecciona la fecha de llegada")
+            valido = false
+        } else if (estado.fechaNacimiento != null && estado.fechaLlegada.isBefore(estado.fechaNacimiento)) {
+            _formularioState.value = _formularioState.value.copy(errorFechaLlegada = "La fecha de llegada no puede ser anterior a la fecha de nacimiento")
             valido = false
         }
         val aves = estado.avesIniciales.toIntOrNull()
@@ -279,12 +288,8 @@ class LotesViewModel(
             try {
                 // Verificar número de lote duplicado
                 val numeroBuscado = estado.numeroLote.trim()
-                // Verificar duplicado con primer emit del Flow
-                var duplicado = false
-                loteRepository.allLotes.collect { lista ->
-                    duplicado = lista.any { it.numeroLote.equals(numeroBuscado, ignoreCase = true) }
-                    return@collect
-                }
+                val listaLotes = loteRepository.allLotes.first()
+                val duplicado = listaLotes.any { it.numeroLote.equals(numeroBuscado, ignoreCase = true) }
                 if (duplicado) {
                     _formularioState.value = _formularioState.value.copy(
                         guardando = false,
@@ -330,24 +335,35 @@ class LotesViewModel(
 
     private val _detalleState = MutableStateFlow(DetalleLoteUiState())
     val detalleState: StateFlow<DetalleLoteUiState> = _detalleState
+    private var cargarLoteJob: Job? = null
 
     fun cargarLote(loteId: Long) {
-        viewModelScope.launch {
-            loteRepository.getById(loteId).collect { lote ->
+        cargarLoteJob?.cancel()
+        _detalleState.value = DetalleLoteUiState(
+            cargando = true,
+            cerradoExitoso = false,
+            mostrandoConfirmacionCierre = false
+        )
+        cargarLoteJob = viewModelScope.launch {
+            combine(
+                loteRepository.getById(loteId),
+                galponRepository.allGalpones
+            ) { lote, galpones ->
+                lote to galpones
+            }.collect { (lote, galpones) ->
                 if (lote != null) {
-                    val galpon = galponRepository.allGalpones.stateIn(
-                        scope = viewModelScope,
-                        started = SharingStarted.Eagerly,
-                        initialValue = emptyList()
-                    ).value.firstOrNull { it.id == lote.galponId }
-                    _detalleState.value = DetalleLoteUiState(
+                    val galpon = galpones.firstOrNull { it.id == lote.galponId }
+                    _detalleState.value = _detalleState.value.copy(
                         lote = lote,
                         nombreGalpon = galpon?.nombre ?: "—",
                         edadSemanas = edadEnSemanas(lote.fechaNacimiento, LocalDate.now()),
                         cargando = false
                     )
                 } else {
-                    _detalleState.value = _detalleState.value.copy(cargando = false)
+                    _detalleState.value = _detalleState.value.copy(
+                        lote = null,
+                        cargando = false
+                    )
                 }
             }
         }

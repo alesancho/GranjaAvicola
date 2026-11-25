@@ -60,6 +60,10 @@ fun FormularioLoteScreen(
 ) {
     val estado by viewModel.formularioState.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        viewModel.reiniciarFormulario()
+    }
+
     // Navegar atrás cuando se guarda exitosamente
     LaunchedEffect(estado.guardadoExitoso) {
         if (estado.guardadoExitoso) {

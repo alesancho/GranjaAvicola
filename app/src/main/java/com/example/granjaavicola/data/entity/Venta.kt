@@ -37,8 +37,16 @@ data class Venta(
     val cantidad: Double,
     val unidad: String,
     val valorUnitario: Long,
+    val subtotal: Long = 0L,
     val iva: Long = 0L,
     val retencion: Long = 0L,
+    val reteFuente: Long = 0L,
+    val reteIva: Long = 0L,
+    val reteIca: Long = 0L,
     val total: Long,
+    val netoAPagar: Long = 0L,
+    val numeroFactura: String? = null,
+    val cuifeCufe: String? = null,
+    val conceptoRetencion: String? = null,
     val loteId: Long? = null
 )

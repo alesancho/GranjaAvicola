@@ -5,11 +5,15 @@ import android.util.Log
 import androidx.room.withTransaction
 import com.example.granjaavicola.data.db.AppDatabase
 import com.example.granjaavicola.data.preferences.PreferenciasRepository
+import com.example.granjaavicola.data.repository.ActivoFijoRepository
 import com.example.granjaavicola.data.repository.CompraRepository
+import com.example.granjaavicola.data.repository.EmpleadoRepository
 import com.example.granjaavicola.data.repository.EstandarRepository
 import com.example.granjaavicola.data.repository.GalponRepository
 import com.example.granjaavicola.data.repository.InventarioAlimentoMovimientoRepository
 import com.example.granjaavicola.data.repository.LoteRepository
+import com.example.granjaavicola.data.repository.MovimientoBancarioRepository
+import com.example.granjaavicola.data.repository.PagoNominaRepository
 import com.example.granjaavicola.data.repository.PagoRepository
 import com.example.granjaavicola.data.repository.PesajeAveRepository
 import com.example.granjaavicola.data.repository.PesajeHuevoRepository
@@ -74,6 +78,18 @@ class AppContainer(application: Application) {
 
     val sanidadRepository: SanidadRepository =
         SanidadRepository(database.sanidadDao())
+
+    val movimientoBancarioRepository: MovimientoBancarioRepository =
+        MovimientoBancarioRepository(database.movimientoBancarioDao())
+
+    val empleadoRepository: EmpleadoRepository =
+        EmpleadoRepository(database.empleadoDao())
+
+    val pagoNominaRepository: PagoNominaRepository =
+        PagoNominaRepository(database.pagoNominaDao())
+
+    val activoFijoRepository: ActivoFijoRepository =
+        ActivoFijoRepository(database.activoFijoDao())
 }
 
 class GranjaApp : Application() {

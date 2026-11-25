@@ -5,6 +5,8 @@ import com.example.granjaavicola.data.entity.CategoriaCompra
 import com.example.granjaavicola.data.entity.EstadoLote
 import com.example.granjaavicola.data.entity.FaseEstandar
 import com.example.granjaavicola.data.entity.ProductoVenta
+import com.example.granjaavicola.data.entity.TipoDocumento
+import com.example.granjaavicola.data.entity.TipoMovimientoBancario
 import com.example.granjaavicola.data.entity.TipoMovimientoInventario
 import com.example.granjaavicola.data.entity.TipoPago
 import com.example.granjaavicola.data.entity.TipoReferenciaPago
@@ -111,6 +113,26 @@ class Converters {
 
     @TypeConverter
     fun toTipoSanidad(tipo: TipoSanidad?): String? {
+        return tipo?.name
+    }
+
+    @TypeConverter
+    fun fromTipoDocumento(value: String?): TipoDocumento? {
+        return value?.let { enumValueOf<TipoDocumento>(it) }
+    }
+
+    @TypeConverter
+    fun toTipoDocumento(tipo: TipoDocumento?): String? {
+        return tipo?.name
+    }
+
+    @TypeConverter
+    fun fromTipoMovimientoBancario(value: String?): TipoMovimientoBancario? {
+        return value?.let { enumValueOf<TipoMovimientoBancario>(it) }
+    }
+
+    @TypeConverter
+    fun toTipoMovimientoBancario(tipo: TipoMovimientoBancario?): String? {
         return tipo?.name
     }
 }

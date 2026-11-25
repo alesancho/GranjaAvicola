@@ -1,7 +1,10 @@
 package com.example.granjaavicola
 
 import android.app.Application
+import android.util.Log
+import androidx.room.withTransaction
 import com.example.granjaavicola.data.db.AppDatabase
+import com.example.granjaavicola.data.preferences.PreferenciasRepository
 import com.example.granjaavicola.data.repository.CompraRepository
 import com.example.granjaavicola.data.repository.EstandarRepository
 import com.example.granjaavicola.data.repository.GalponRepository
@@ -15,6 +18,11 @@ import com.example.granjaavicola.data.repository.RegistroDiarioRepository
 import com.example.granjaavicola.data.repository.SanidadRepository
 import com.example.granjaavicola.data.repository.TerceroRepository
 import com.example.granjaavicola.data.repository.VentaRepository
+import com.example.granjaavicola.domain.estandares.parsearEstandaresCsv
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Contenedor manual de dependencias de la aplicación.
@@ -24,6 +32,9 @@ import com.example.granjaavicola.data.repository.VentaRepository
 class AppContainer(application: Application) {
 
     val database: AppDatabase = AppDatabase.getDatabase(application)
+
+    val preferenciasRepository: PreferenciasRepository =
+        PreferenciasRepository(application)
 
     val galponRepository: GalponRepository =
         GalponRepository(database.galponDao())
@@ -70,8 +81,33 @@ class GranjaApp : Application() {
     lateinit var container: AppContainer
         private set
 
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        precargarEstandaresSiVacio()
+    }
+
+    private fun precargarEstandaresSiVacio() {
+        appScope.launch(Dispatchers.IO) {
+            try {
+                if (container.estandarRepository.count() == 0) {
+                    val textoCsv = assets.open("estandares.csv")
+                        .bufferedReader(Charsets.UTF_8)
+                        .use { it.readText() }
+                    val estandares = parsearEstandaresCsv(textoCsv)
+                    if (estandares.isNotEmpty()) {
+                        container.database.withTransaction {
+                            if (container.estandarRepository.count() == 0) {
+                                container.estandarRepository.insertAll(estandares)
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("GranjaApp", "Error al cargar estándares desde assets", e)
+            }
+        }
     }
 }

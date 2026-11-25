@@ -6,19 +6,25 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.withTransaction
 import com.example.granjaavicola.data.db.AppDatabase
 import com.example.granjaavicola.data.entity.EstadoLote
+import com.example.granjaavicola.data.entity.Estandar
+import com.example.granjaavicola.data.entity.FaseEstandar
 import com.example.granjaavicola.data.entity.Lote
 import com.example.granjaavicola.data.entity.ProduccionHuevo
 import com.example.granjaavicola.data.entity.RegistroDiario
+import com.example.granjaavicola.data.preferences.PreferenciasRepository
+import com.example.granjaavicola.data.repository.EstandarRepository
 import com.example.granjaavicola.data.repository.LoteRepository
 import com.example.granjaavicola.data.repository.ProduccionHuevoRepository
 import com.example.granjaavicola.data.repository.RegistroDiarioRepository
 import com.example.granjaavicola.domain.calculos.EntradaFormularioRegistro
 import com.example.granjaavicola.domain.calculos.calcularSaldoRegistro
 import com.example.granjaavicola.domain.calculos.consumoGramosPorAveDia
+import com.example.granjaavicola.domain.calculos.edadEnSemanas
 import com.example.granjaavicola.domain.calculos.parsearDecimalNoNegativo
 import com.example.granjaavicola.domain.calculos.porcentajePostura
 import com.example.granjaavicola.domain.calculos.validarFechaRegistro
 import com.example.granjaavicola.domain.calculos.validarFormularioRegistro
+import com.example.granjaavicola.domain.modelos.LineaEstandar
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +32,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -59,6 +66,10 @@ data class RegistroUiState(
     val consumoGramosAveDia: Double = 0.0,
     val totalHuevos: Int = 0,
     val porcentajePostura: Double = 0.0,
+    // Estándar de referencia
+    val lineaActiva: LineaEstandar = LineaEstandar.POR_DEFECTO,
+    val semanaEdadLote: Int = 0,
+    val estandarSemana: Estandar? = null,
     // Errores
     val errorLote: String? = null,
     val errorFecha: String? = null,
@@ -94,6 +105,8 @@ class RegistroViewModel(
     private val loteRepository: LoteRepository,
     private val registroDiarioRepository: RegistroDiarioRepository,
     private val produccionHuevoRepository: ProduccionHuevoRepository,
+    private val estandarRepository: EstandarRepository,
+    private val preferenciasRepository: PreferenciasRepository,
     private val db: AppDatabase
 ) : ViewModel() {
 
@@ -177,6 +190,41 @@ class RegistroViewModel(
                     )
                     _uiState.value = recalcularMetricasEnVivo(actual)
                 }
+            }
+        }
+
+        viewModelScope.launch {
+            combine(
+                _loteIdSeleccionado,
+                _fechaSeleccionada,
+                loteRepository.lotesActivos,
+                preferenciasRepository.lineaActiva
+            ) { id, fecha, lotes, lineaActiva ->
+                Triple(lotes.firstOrNull { it.id == id }, fecha, lineaActiva)
+            }.flatMapLatest { (lote, fecha, lineaActiva) ->
+                if (lote == null) {
+                    flowOf(Triple(lineaActiva, 0, null as Estandar?))
+                } else {
+                    val semanaEdad = edadEnSemanas(lote.fechaNacimiento, fecha)
+                    val fase = if (lote.estado == EstadoLote.PRODUCCION) {
+                        FaseEstandar.PRODUCCION
+                    } else {
+                        FaseEstandar.LEVANTE
+                    }
+                    if (semanaEdad <= 0) {
+                        flowOf(Triple(lineaActiva, semanaEdad, null))
+                    } else {
+                        estandarRepository
+                            .getPorLineaSemanaYFase(lineaActiva.codigo, semanaEdad, fase)
+                            .map { estandar -> Triple(lineaActiva, semanaEdad, estandar) }
+                    }
+                }
+            }.collect { (lineaActiva, semanaEdad, estandar) ->
+                _uiState.value = _uiState.value.copy(
+                    lineaActiva = lineaActiva,
+                    semanaEdadLote = semanaEdad,
+                    estandarSemana = estandar
+                )
             }
         }
     }
@@ -507,6 +555,8 @@ class RegistroViewModel(
             loteRepository: LoteRepository,
             registroDiarioRepository: RegistroDiarioRepository,
             produccionHuevoRepository: ProduccionHuevoRepository,
+            estandarRepository: EstandarRepository,
+            preferenciasRepository: PreferenciasRepository,
             db: AppDatabase
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -515,6 +565,8 @@ class RegistroViewModel(
                     loteRepository = loteRepository,
                     registroDiarioRepository = registroDiarioRepository,
                     produccionHuevoRepository = produccionHuevoRepository,
+                    estandarRepository = estandarRepository,
+                    preferenciasRepository = preferenciasRepository,
                     db = db
                 ) as T
         }

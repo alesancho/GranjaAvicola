@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "e1900e4a6e564dea69e151d82d122e84",
+    "identityHash": "390e6ce3bcac56f01fdca7b743c6c27c",
     "entities": [
       {
         "tableName": "galpones",
@@ -547,14 +547,15 @@
         },
         "indices": [
           {
-            "name": "index_estandares_linea_semanaEdad",
+            "name": "index_estandares_linea_semanaEdad_fase",
             "unique": true,
             "columnNames": [
               "linea",
-              "semanaEdad"
+              "semanaEdad",
+              "fase"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_estandares_linea_semanaEdad` ON `${TABLE_NAME}` (`linea`, `semanaEdad`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_estandares_linea_semanaEdad_fase` ON `${TABLE_NAME}` (`linea`, `semanaEdad`, `fase`)"
           }
         ]
       },
@@ -1135,7 +1136,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e1900e4a6e564dea69e151d82d122e84')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '390e6ce3bcac56f01fdca7b743c6c27c')"
     ]
   }
 }

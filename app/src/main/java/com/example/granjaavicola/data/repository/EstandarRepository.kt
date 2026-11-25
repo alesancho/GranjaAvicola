@@ -20,6 +20,14 @@ class EstandarRepository(private val estandarDao: EstandarDao) {
     fun getPorLineaYSemana(linea: String, semanaEdad: Int): Flow<Estandar?> =
         estandarDao.getEstandarPorLineaYSemana(linea, semanaEdad)
 
+    fun getPorLineaSemanaYFase(
+        linea: String,
+        semanaEdad: Int,
+        fase: FaseEstandar
+    ): Flow<Estandar?> = estandarDao.getEstandarPorLineaSemanaYFase(linea, semanaEdad, fase)
+
+    suspend fun count(): Int = estandarDao.count()
+
     suspend fun insert(estandar: Estandar): Long = estandarDao.insert(estandar)
 
     suspend fun insertAll(estandares: List<Estandar>): List<Long> =

@@ -18,6 +18,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.granjaavicola.GranjaApp
+import com.example.granjaavicola.ui.ajustes.AjustesScreen
+import com.example.granjaavicola.ui.ajustes.AjustesViewModel
 import com.example.granjaavicola.ui.finanzas.FinanzasScreen
 import com.example.granjaavicola.ui.informes.InformesScreen
 import com.example.granjaavicola.ui.inicio.InicioScreen
@@ -28,9 +30,10 @@ import com.example.granjaavicola.ui.levante.LotesViewModel
 import com.example.granjaavicola.ui.produccion.RegistroScreen
 import com.example.granjaavicola.ui.produccion.RegistroViewModel
 
-// Rutas adicionales para el módulo de lotes
+// Rutas adicionales
 private const val RUTA_NUEVO_LOTE = "nuevo_lote"
 private const val RUTA_DETALLE_LOTE = "detalle_lote/{loteId}"
+private const val RUTA_AJUSTES = "ajustes"
 private fun rutaDetalleLote(id: Long) = "detalle_lote/$id"
 
 // Pantalla contenedora principal con barra de navegación inferior
@@ -43,11 +46,12 @@ fun NavegacionPrincipal() {
     // Destinos de la barra inferior (sólo los que tienen ícono)
     val destinosBarraInferior = DestinoNavegacion.entries
 
-    // Determinar si la barra inferior debe ocultarse (en sub-pantallas de lotes)
+    // Determinar si la barra inferior debe ocultarse (en sub-pantallas de lotes y ajustes)
     val mostrarBarraInferior = rutaActual != RUTA_NUEVO_LOTE &&
+        rutaActual != RUTA_AJUSTES &&
         rutaActual?.startsWith("detalle_lote/") != true
 
-    // Instanciar el ViewModel una sola vez para todo el módulo de lotes
+    // Instanciar los ViewModels una sola vez para los módulos correspondientes
     val context = LocalContext.current
     val container = (context.applicationContext as GranjaApp).container
     val lotesViewModel: LotesViewModel = viewModel(
@@ -61,7 +65,14 @@ fun NavegacionPrincipal() {
             loteRepository = container.loteRepository,
             registroDiarioRepository = container.registroDiarioRepository,
             produccionHuevoRepository = container.produccionHuevoRepository,
+            estandarRepository = container.estandarRepository,
+            preferenciasRepository = container.preferenciasRepository,
             db = container.database
+        )
+    )
+    val ajustesViewModel: AjustesViewModel = viewModel(
+        factory = AjustesViewModel.factory(
+            preferenciasRepository = container.preferenciasRepository
         )
     )
 
@@ -106,7 +117,17 @@ fun NavegacionPrincipal() {
             modifier = Modifier.padding(paddingValores)
         ) {
             composable(DestinoNavegacion.INICIO.ruta) {
-                InicioScreen()
+                InicioScreen(
+                    onIrAAjustes = { navController.navigate(RUTA_AJUSTES) },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            composable(RUTA_AJUSTES) {
+                AjustesScreen(
+                    viewModel = ajustesViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
             composable(DestinoNavegacion.REGISTRO.ruta) {
                 RegistroScreen(

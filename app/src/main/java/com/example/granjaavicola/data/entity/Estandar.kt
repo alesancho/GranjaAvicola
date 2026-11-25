@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 @Entity(
     tableName = "estandares",
     indices = [
-        Index(value = ["linea", "semanaEdad"], unique = true)
+        Index(value = ["linea", "semanaEdad", "fase"], unique = true)
     ]
 )
 data class Estandar(

@@ -39,4 +39,18 @@ interface EstandarDao {
 
     @Query("SELECT * FROM estandares WHERE linea = :linea AND semanaEdad = :semanaEdad LIMIT 1")
     fun getEstandarPorLineaYSemana(linea: String, semanaEdad: Int): Flow<Estandar?>
+
+    @Query(
+        "SELECT * FROM estandares " +
+            "WHERE linea = :linea AND semanaEdad = :semanaEdad AND fase = :fase " +
+            "LIMIT 1"
+    )
+    fun getEstandarPorLineaSemanaYFase(
+        linea: String,
+        semanaEdad: Int,
+        fase: FaseEstandar
+    ): Flow<Estandar?>
+
+    @Query("SELECT COUNT(*) FROM estandares")
+    suspend fun count(): Int
 }

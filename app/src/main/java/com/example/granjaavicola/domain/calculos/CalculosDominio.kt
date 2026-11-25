@@ -259,15 +259,3 @@ fun calcularInventarioAlimento(movimientos: List<MovimientoAlimento>): EstadoInv
         costoPromedioPorKg = costoPromedioPorKg
     )
 }
-
-/**
- * Alias de [calcularInventarioAlimento] para compatibilidad de nomenclatura.
- */
-fun calcularCostoPromedioPonderado(movimientos: List<MovimientoAlimento>): EstadoInventario =
-    calcularInventarioAlimento(movimientos)
-
-/**
- * Alias de [calcularInventarioAlimento] para compatibilidad de nomenclatura.
- */
-fun calcularEstadoInventario(movimientos: List<MovimientoAlimento>): EstadoInventario =
-    calcularInventarioAlimento(movimientos)

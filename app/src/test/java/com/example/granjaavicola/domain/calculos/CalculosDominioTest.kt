@@ -394,8 +394,11 @@ class CalculosDominioTest {
         // Caso redondeo hacia abajo: 10.5 kg a $100.20 = 1052.10 -> 1052L
         assertEquals(1052L, costoAlimentoSemanal(10.5, 100.20))
 
-        // Caso redondeo hacia arriba: 10.5 kg a $100.60 = 1056.30 -> 1056L
+        // Caso redondeo hacia abajo: 10.5 kg a $100.60 = 1056.30 -> 1056L
         assertEquals(1056L, costoAlimentoSemanal(10.5, 100.60))
+
+        // Caso redondeo hacia arriba: 10.0 kg a $100.06 = 1000.6 -> 1001L
+        assertEquals(1001L, costoAlimentoSemanal(10.0, 100.06))
     }
 
     @Test

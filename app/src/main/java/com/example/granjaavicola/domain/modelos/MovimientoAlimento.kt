@@ -9,11 +9,6 @@ enum class TipoMovimiento {
 }
 
 /**
- * Alias de TipoMovimiento para compatibilidad semántica.
- */
-typealias TipoMovimientoAlimento = TipoMovimiento
-
-/**
  * Representa un movimiento individual de alimento en el inventario.
  *
  * @param tipo Tipo de movimiento: [TipoMovimiento.ENTRADA] o [TipoMovimiento.SALIDA].

@@ -29,7 +29,12 @@ data class MovimientoBancario(
     val descripcion: String,
     val valor: Long,
     val tipo: TipoMovimientoBancario,
+    val banco: String = "",
     val cuenta: String,
+    val medio: MedioMovimientoBancario = MedioMovimientoBancario.TRANSFERENCIA,
     val terceroId: Long? = null,
+    val sujetoGmf: Boolean = false,
+    val gmfEstimado: Long = 0L,
+    val soporte: String? = null,
     val conciliado: Boolean = false
 )

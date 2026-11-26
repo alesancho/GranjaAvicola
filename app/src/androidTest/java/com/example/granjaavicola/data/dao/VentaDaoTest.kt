@@ -68,10 +68,13 @@ class VentaDaoTest {
         clienteId = terceroDao.insert(
             Tercero(
                 nombre = "Supermercado El Sol",
-                documento = "901987654-1",
+                documento = "901987654",
+                digitoVerificacion = 1,
                 tipo = TipoTercero.CLIENTE,
                 telefono = "3159876543",
                 direccion = "Carrera 5 # 14-25",
+                responsableIva = false,
+                obligadoFacturar = false
             )
         )
     }
@@ -85,6 +88,7 @@ class VentaDaoTest {
     @Test
     fun insertarYObtenerVentaPorId() = runBlocking {
         val fecha = LocalDate.of(2026, 2, 10)
+        // subtotal=9_000_000; tarifaIva=0.0; iva=0; total=9_000_000
         val venta = Venta(
             fecha = fecha,
             terceroId = clienteId,
@@ -92,8 +96,9 @@ class VentaDaoTest {
             cantidad = 50.0,
             unidad = "CANASTILLA_30_DOCENAS",
             valorUnitario = 180_000L,
+            subtotal = 9_000_000L,
+            tarifaIva = 0.0,
             iva = 0L,
-            retencion = 0L,
             total = 9_000_000L,
             loteId = loteId,
         )
@@ -107,7 +112,36 @@ class VentaDaoTest {
         assertEquals(ProductoVenta.HUEVO_AA, recuperada?.producto)
         assertEquals(50.0, recuperada?.cantidad ?: 0.0, 0.001)
         assertEquals(180_000L, recuperada?.valorUnitario)
+        assertEquals(9_000_000L, recuperada?.subtotal)
+        assertEquals(0.0, recuperada?.tarifaIva ?: 0.0, 0.0001)
+        assertEquals(0L, recuperada?.iva)
         assertEquals(9_000_000L, recuperada?.total)
+    }
+
+    @Test
+    fun ventaCon19PorCientoIva() = runBlocking {
+        // subtotal=1_000_000; tarifaIva=0.19; iva=190_000; total=1_190_000
+        val venta = Venta(
+            fecha = LocalDate.of(2026, 3, 1),
+            terceroId = clienteId,
+            producto = ProductoVenta.OTRO,
+            cantidad = 1.0,
+            unidad = "UNIDAD",
+            valorUnitario = 1_000_000L,
+            subtotal = 1_000_000L,
+            tarifaIva = 0.19,
+            iva = 190_000L,
+            total = 1_190_000L,
+            netoAPagar = 1_190_000L,
+            loteId = loteId,
+        )
+        val id = ventaDao.insert(venta)
+        val recuperada = ventaDao.getById(id).first()
+
+        assertNotNull(recuperada)
+        assertEquals(0.19, recuperada?.tarifaIva ?: 0.0, 0.0001)
+        assertEquals(190_000L, recuperada?.iva)
+        assertEquals(1_190_000L, recuperada?.total)
     }
 
     @Test
@@ -119,6 +153,7 @@ class VentaDaoTest {
             cantidad = 30.0,
             unidad = "CANASTILLA",
             valorUnitario = 160_000L,
+            subtotal = 4_800_000L,
             total = 4_800_000L,
             loteId = loteId,
         )
@@ -129,6 +164,7 @@ class VentaDaoTest {
             cantidad = 100.0,
             unidad = "BULTO",
             valorUnitario = 5_000L,
+            subtotal = 500_000L,
             total = 500_000L,
             loteId = loteId,
         )
@@ -139,6 +175,7 @@ class VentaDaoTest {
             cantidad = 20.0,
             unidad = "CANASTILLA",
             valorUnitario = 140_000L,
+            subtotal = 2_800_000L,
             total = 2_800_000L,
             loteId = loteId,
         )
@@ -166,6 +203,7 @@ class VentaDaoTest {
             cantidad = 10.0,
             unidad = "CANASTILLA",
             valorUnitario = 180_000L,
+            subtotal = 1_800_000L,
             total = 1_800_000L,
         )
         ventaDao.insert(venta)
@@ -187,6 +225,7 @@ class VentaDaoTest {
             cantidad = 200.0,
             unidad = "AVE",
             valorUnitario = 8_000L,
+            subtotal = 1_600_000L,
             total = 1_600_000L,
             loteId = loteId,
         )
@@ -209,6 +248,7 @@ class VentaDaoTest {
             cantidad = 1.0,
             unidad = "LOTE",
             valorUnitario = 50_000L,
+            subtotal = 50_000L,
             total = 50_000L
         )
         val id = ventaDao.insert(venta)

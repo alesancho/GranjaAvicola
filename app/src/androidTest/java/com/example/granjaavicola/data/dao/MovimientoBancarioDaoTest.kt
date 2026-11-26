@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.granjaavicola.data.db.AppDatabase
+import com.example.granjaavicola.data.entity.MedioMovimientoBancario
 import com.example.granjaavicola.data.entity.MovimientoBancario
 import com.example.granjaavicola.data.entity.Tercero
 import com.example.granjaavicola.data.entity.TipoDocumento
@@ -51,7 +52,9 @@ class MovimientoBancarioDaoTest {
                 telefono = "3101234567",
                 direccion = "Zona Industrial Km 4",
                 correo = "facturacion@distribuidora.com",
-                ciudad = "Bucaramanga"
+                ciudad = "Bucaramanga",
+                responsableIva = true,
+                obligadoFacturar = true
             )
         )
     }
@@ -70,8 +73,13 @@ class MovimientoBancarioDaoTest {
             descripcion = "Pago transferencia factura compra concentrado",
             valor = 5_250_000L,
             tipo = TipoMovimientoBancario.EGRESO,
+            banco = "Bancolombia",
             cuenta = "Bancolombia Ahorros 123-456789-01",
+            medio = MedioMovimientoBancario.TRANSFERENCIA,
             terceroId = terceroId,
+            sujetoGmf = true,
+            gmfEstimado = 21_000L,
+            soporte = "Comprobante-2026-03-15",
             conciliado = true
         )
 
@@ -83,8 +91,13 @@ class MovimientoBancarioDaoTest {
         assertEquals("Pago transferencia factura compra concentrado", recuperado?.descripcion)
         assertEquals(5_250_000L, recuperado?.valor)
         assertEquals(TipoMovimientoBancario.EGRESO, recuperado?.tipo)
+        assertEquals("Bancolombia", recuperado?.banco)
         assertEquals("Bancolombia Ahorros 123-456789-01", recuperado?.cuenta)
+        assertEquals(MedioMovimientoBancario.TRANSFERENCIA, recuperado?.medio)
         assertEquals(terceroId, recuperado?.terceroId)
+        assertEquals(true, recuperado?.sujetoGmf)
+        assertEquals(21_000L, recuperado?.gmfEstimado)
+        assertEquals("Comprobante-2026-03-15", recuperado?.soporte)
         assertEquals(true, recuperado?.conciliado)
     }
 
@@ -95,8 +108,12 @@ class MovimientoBancarioDaoTest {
             descripcion = "Abono cliente contado consignación",
             valor = 1_800_000L,
             tipo = TipoMovimientoBancario.INGRESO,
+            banco = "Davivienda",
             cuenta = "Davivienda 987-654321-00",
+            medio = MedioMovimientoBancario.EFECTIVO,
             terceroId = null,
+            sujetoGmf = false,
+            gmfEstimado = 0L,
             conciliado = false
         )
 
@@ -106,6 +123,8 @@ class MovimientoBancarioDaoTest {
         assertEquals(1, lista.size)
         assertEquals(1_800_000L, lista[0].valor)
         assertEquals(TipoMovimientoBancario.INGRESO, lista[0].tipo)
+        assertEquals(MedioMovimientoBancario.EFECTIVO, lista[0].medio)
+        assertEquals(false, lista[0].sujetoGmf)
         assertEquals(false, lista[0].conciliado)
     }
 
@@ -116,7 +135,9 @@ class MovimientoBancarioDaoTest {
             descripcion = "Pago a proveedor",
             valor = 500_000L,
             tipo = TipoMovimientoBancario.EGRESO,
+            banco = "Bancolombia",
             cuenta = "Bancolombia",
+            medio = MedioMovimientoBancario.CHEQUE,
             terceroId = terceroId,
             conciliado = false
         )

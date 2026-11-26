@@ -14,6 +14,10 @@ data class Tercero(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val nombre: String,
+    val primerApellido: String? = null,
+    val segundoApellido: String? = null,
+    val primerNombre: String? = null,
+    val otrosNombres: String? = null,
     val tipoDocumento: TipoDocumento = TipoDocumento.CC,
     val documento: String,
     val digitoVerificacion: Int? = null,
@@ -21,5 +25,10 @@ data class Tercero(
     val telefono: String? = null,
     val direccion: String? = null,
     val correo: String? = null,
-    val ciudad: String? = null
+    val ciudad: String? = null,
+    val codDepartamento: String? = null,
+    val codMunicipio: String? = null,
+    val codPais: String = "169",
+    val responsableIva: Boolean = false,
+    val obligadoFacturar: Boolean = false
 )

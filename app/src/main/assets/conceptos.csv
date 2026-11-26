@@ -1,0 +1,22 @@
+codigo,nombre,fase,naturaleza,retencion_sugerida
+POL,Pollitas de un día,LEVANTE,Costo directo,Compra de productos agrícolas o pecuarios sin procesamiento industrial
+ALI-LEV,Alimento concentrado levante,LEVANTE,Costo directo,Compras generales
+ALI-PRO,Alimento concentrado producción,PRODUCCION,Costo directo,Compras generales
+MED,Medicamentos y vitaminas,AMBAS,Costo directo,Compras generales
+VAC,Vacunas y biológicos,AMBAS,Costo directo,Compras generales
+CAM,Cama (viruta o cascarilla),AMBAS,Costo directo,Compra de productos agrícolas o pecuarios sin procesamiento industrial
+GAS,Gas y calefacción,LEVANTE,Costo indirecto,Compras generales
+ENE,Energía eléctrica,AMBAS,Costo indirecto,Sin retención
+AGU,Agua y acueducto,AMBAS,Costo indirecto,Sin retención
+MOD,Mano de obra directa,AMBAS,Costo directo,Sin retención
+EMP,Empaques y cubetas,PRODUCCION,Costo directo,Compras generales
+TRA,Transporte y fletes,AMBAS,Costo indirecto,Transporte de carga
+VET,Servicios veterinarios,AMBAS,Costo indirecto,Honorarios y comisiones
+ARR,Arrendamientos,AMBAS,Gasto operacional,Arrendamientos
+MAN,Mantenimiento y reparaciones,AMBAS,Costo indirecto,Servicios generales
+ACT,Activos fijos y equipos,NA,Activo,Compras generales
+ADM,Gastos administrativos,NA,Gasto administrativo,Compras generales
+FIN,Gastos financieros y comisiones,NA,Gasto financiero,Sin retención
+IMP,Impuestos y tasas,NA,Gasto operacional,Sin retención
+SEG,Seguros,NA,Gasto administrativo,Sin retención
+OTR,Otros costos y gastos,AMBAS,Gasto operacional,Compras generales

@@ -3,14 +3,19 @@ package com.example.granjaavicola.data.db
 import androidx.room.TypeConverter
 import com.example.granjaavicola.data.entity.CategoriaCompra
 import com.example.granjaavicola.data.entity.EstadoLote
+import com.example.granjaavicola.data.entity.FaseConcepto
 import com.example.granjaavicola.data.entity.FaseEstandar
+import com.example.granjaavicola.data.entity.MedioMovimientoBancario
 import com.example.granjaavicola.data.entity.ProductoVenta
+import com.example.granjaavicola.data.entity.RegimenTributario
 import com.example.granjaavicola.data.entity.TipoDocumento
 import com.example.granjaavicola.data.entity.TipoMovimientoBancario
 import com.example.granjaavicola.data.entity.TipoMovimientoInventario
 import com.example.granjaavicola.data.entity.TipoPago
+import com.example.granjaavicola.data.entity.TipoPersona
 import com.example.granjaavicola.data.entity.TipoReferenciaPago
 import com.example.granjaavicola.data.entity.TipoSanidad
+import com.example.granjaavicola.data.entity.TipoSoporte
 import com.example.granjaavicola.data.entity.TipoTercero
 import java.time.LocalDate
 
@@ -64,6 +69,26 @@ class Converters {
     @TypeConverter
     fun toCategoriaCompra(categoria: CategoriaCompra?): String? {
         return categoria?.name
+    }
+
+    @TypeConverter
+    fun fromTipoSoporte(value: String?): TipoSoporte? {
+        return value?.let { enumValueOf<TipoSoporte>(it) }
+    }
+
+    @TypeConverter
+    fun toTipoSoporte(tipo: TipoSoporte?): String? {
+        return tipo?.name
+    }
+
+    @TypeConverter
+    fun fromFaseConcepto(value: String?): FaseConcepto? {
+        return value?.let { enumValueOf<FaseConcepto>(it) }
+    }
+
+    @TypeConverter
+    fun toFaseConcepto(fase: FaseConcepto?): String? {
+        return fase?.name
     }
 
     @TypeConverter
@@ -134,5 +159,35 @@ class Converters {
     @TypeConverter
     fun toTipoMovimientoBancario(tipo: TipoMovimientoBancario?): String? {
         return tipo?.name
+    }
+
+    @TypeConverter
+    fun fromMedioMovimientoBancario(value: String?): MedioMovimientoBancario? {
+        return value?.let { enumValueOf<MedioMovimientoBancario>(it) }
+    }
+
+    @TypeConverter
+    fun toMedioMovimientoBancario(medio: MedioMovimientoBancario?): String? {
+        return medio?.name
+    }
+
+    @TypeConverter
+    fun fromTipoPersona(value: String?): TipoPersona? {
+        return value?.let { enumValueOf<TipoPersona>(it) }
+    }
+
+    @TypeConverter
+    fun toTipoPersona(tipo: TipoPersona?): String? {
+        return tipo?.name
+    }
+
+    @TypeConverter
+    fun fromRegimenTributario(value: String?): RegimenTributario? {
+        return value?.let { enumValueOf<RegimenTributario>(it) }
+    }
+
+    @TypeConverter
+    fun toRegimenTributario(regimen: RegimenTributario?): String? {
+        return regimen?.name
     }
 }

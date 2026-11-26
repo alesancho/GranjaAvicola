@@ -12,6 +12,7 @@ import com.example.granjaavicola.data.entity.EstadoLote
 import com.example.granjaavicola.data.entity.Galpon
 import com.example.granjaavicola.data.entity.Lote
 import com.example.granjaavicola.data.entity.Tercero
+import com.example.granjaavicola.data.entity.TipoSoporte
 import com.example.granjaavicola.data.entity.TipoTercero
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -68,10 +69,13 @@ class CompraDaoTest {
         proveedorId = terceroDao.insert(
             Tercero(
                 nombre = "Distribuidora Avícola SAS",
-                documento = "900123456-7",
+                documento = "900123456",
+                digitoVerificacion = 7,
                 tipo = TipoTercero.PROVEEDOR,
                 telefono = "3001234567",
                 direccion = "Calle 10 # 20-30",
+                responsableIva = true,
+                obligadoFacturar = true
             )
         )
     }
@@ -85,17 +89,23 @@ class CompraDaoTest {
     @Test
     fun insertarYObtenerCompraPorId() = runBlocking {
         val fecha = LocalDate.of(2026, 2, 1)
+        // subtotal=4_800_000; tarifaIva=0.0; iva=0; total=4_800_000; netoAPagar=4_800_000
         val compra = Compra(
             fecha = fecha,
             terceroId = proveedorId,
+            tipoSoporte = TipoSoporte.FACTURA_ELECTRONICA,
+            codigoConcepto = "ALI-LEV",
             categoria = CategoriaCompra.ALIMENTO,
             descripcion = "Bultos concentrado levante",
             cantidad = 40.0,
             unidad = "BULTOS_40KG",
             valorUnitario = 120_000L,
+            subtotal = 4_800_000L,
+            tarifaIva = 0.0,
             iva = 0L,
-            retencion = 0L,
+            reteFuente = 120_000L,
             total = 4_800_000L,
+            netoAPagar = 4_680_000L,
             loteId = loteId,
             pagada = false,
         )
@@ -106,11 +116,47 @@ class CompraDaoTest {
         assertNotNull(recuperada)
         assertEquals(proveedorId, recuperada?.terceroId)
         assertEquals(loteId, recuperada?.loteId)
+        assertEquals(TipoSoporte.FACTURA_ELECTRONICA, recuperada?.tipoSoporte)
+        assertEquals("ALI-LEV", recuperada?.codigoConcepto)
         assertEquals(CategoriaCompra.ALIMENTO, recuperada?.categoria)
         assertEquals(40.0, recuperada?.cantidad ?: 0.0, 0.001)
         assertEquals(120_000L, recuperada?.valorUnitario)
+        assertEquals(4_800_000L, recuperada?.subtotal)
+        assertEquals(0.0, recuperada?.tarifaIva ?: 0.0, 0.0001)
         assertEquals(4_800_000L, recuperada?.total)
+        assertEquals(4_680_000L, recuperada?.netoAPagar)
         assertEquals(false, recuperada?.pagada)
+    }
+
+    @Test
+    fun compraCon5PorCientoIva() = runBlocking {
+        // subtotal=1_000_000; tarifaIva=0.05; iva=50_000; total=1_050_000
+        val compra = Compra(
+            fecha = LocalDate.of(2026, 3, 1),
+            terceroId = proveedorId,
+            tipoSoporte = TipoSoporte.DOCUMENTO_SOPORTE,
+            codigoConcepto = "MED",
+            categoria = CategoriaCompra.MEDICAMENTOS,
+            descripcion = "Vitaminas",
+            cantidad = 1.0,
+            unidad = "FRASCO",
+            valorUnitario = 1_000_000L,
+            subtotal = 1_000_000L,
+            tarifaIva = 0.05,
+            iva = 50_000L,
+            total = 1_050_000L,
+            netoAPagar = 1_050_000L,
+            loteId = loteId,
+        )
+
+        val id = compraDao.insert(compra)
+        val recuperada = compraDao.getById(id).first()
+
+        assertNotNull(recuperada)
+        assertEquals(TipoSoporte.DOCUMENTO_SOPORTE, recuperada?.tipoSoporte)
+        assertEquals(0.05, recuperada?.tarifaIva ?: 0.0, 0.0001)
+        assertEquals(50_000L, recuperada?.iva)
+        assertEquals(1_050_000L, recuperada?.total)
     }
 
     @Test
@@ -123,6 +169,7 @@ class CompraDaoTest {
             cantidad = 5.0,
             unidad = "FRASCO_1L",
             valorUnitario = 45_000L,
+            subtotal = 225_000L,
             total = 225_000L,
             loteId = loteId,
             pagada = true,
@@ -135,6 +182,7 @@ class CompraDaoTest {
             cantidad = 20.0,
             unidad = "BULTOS_40KG",
             valorUnitario = 125_000L,
+            subtotal = 2_500_000L,
             total = 2_500_000L,
             loteId = loteId,
             pagada = false,
@@ -147,6 +195,7 @@ class CompraDaoTest {
             cantidad = 500.0,
             unidad = "UNIDAD",
             valorUnitario = 350L,
+            subtotal = 175_000L,
             total = 175_000L,
             pagada = true,
         )
@@ -175,6 +224,7 @@ class CompraDaoTest {
             cantidad = 1.0,
             unidad = "SERVICIO",
             valorUnitario = 200_000L,
+            subtotal = 200_000L,
             total = 200_000L,
             pagada = true,
         )
@@ -198,6 +248,7 @@ class CompraDaoTest {
             cantidad = 2.0,
             unidad = "JORNAL",
             valorUnitario = 60_000L,
+            subtotal = 120_000L,
             total = 120_000L,
             loteId = loteId,
             pagada = true,
@@ -222,6 +273,7 @@ class CompraDaoTest {
             cantidad = 10.0,
             unidad = "UNIDAD",
             valorUnitario = 15_000L,
+            subtotal = 150_000L,
             total = 150_000L,
             pagada = false
         )

@@ -6,6 +6,15 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.LocalDate
 
+/**
+ * Representa una compra o gasto registrado en la granja.
+ *
+ * Relación contable de montos (todos los valores monetarios en Long COP):
+ * - `subtotal` = base gravable
+ * - `iva` = `subtotal * tarifaIva`
+ * - `total` = `subtotal + iva`
+ * - `netoAPagar` = `total - reteFuente - reteIva - reteIca`
+ */
 @Entity(
     tableName = "compras",
     foreignKeys = [
@@ -25,7 +34,8 @@ import java.time.LocalDate
     indices = [
         Index(value = ["terceroId"]),
         Index(value = ["loteId"]),
-        Index(value = ["fecha"])
+        Index(value = ["fecha"]),
+        Index(value = ["codigoConcepto"])
     ]
 )
 data class Compra(
@@ -33,18 +43,25 @@ data class Compra(
     val id: Long = 0,
     val fecha: LocalDate,
     val terceroId: Long? = null,
+    val tipoSoporte: TipoSoporte = TipoSoporte.FACTURA_ELECTRONICA,
+    val codigoConcepto: String = "OTR",
     val categoria: CategoriaCompra,
     val descripcion: String,
     val cantidad: Double,
     val unidad: String,
     val valorUnitario: Long,
+    /** Base gravable de la compra (COP). */
     val subtotal: Long = 0L,
+    /** Tarifa de IVA aplicable: 0.0, 0.05 o 0.19. */
+    val tarifaIva: Double = 0.0,
+    /** Valor del IVA: `subtotal * tarifaIva` (COP). */
     val iva: Long = 0L,
-    val retencion: Long = 0L,
     val reteFuente: Long = 0L,
     val reteIva: Long = 0L,
     val reteIca: Long = 0L,
+    /** Total facturado: `subtotal + iva` (COP). */
     val total: Long,
+    /** Valor neto a desembolsar: `total - reteFuente - reteIva - reteIca` (COP). */
     val netoAPagar: Long = 0L,
     val numeroFactura: String? = null,
     val cuifeCufe: String? = null,

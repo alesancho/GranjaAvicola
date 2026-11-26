@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.granjaavicola.data.dao.ActivoFijoDao
 import com.example.granjaavicola.data.dao.CompraDao
+import com.example.granjaavicola.data.dao.ConceptoCompraDao
 import com.example.granjaavicola.data.dao.EmpleadoDao
 import com.example.granjaavicola.data.dao.EstandarDao
 import com.example.granjaavicola.data.dao.GalponDao
@@ -15,15 +16,18 @@ import com.example.granjaavicola.data.dao.LoteDao
 import com.example.granjaavicola.data.dao.MovimientoBancarioDao
 import com.example.granjaavicola.data.dao.PagoDao
 import com.example.granjaavicola.data.dao.PagoNominaDao
+import com.example.granjaavicola.data.dao.ParametrosFiscalesDao
 import com.example.granjaavicola.data.dao.PesajeAveDao
 import com.example.granjaavicola.data.dao.PesajeHuevoDao
 import com.example.granjaavicola.data.dao.ProduccionHuevoDao
 import com.example.granjaavicola.data.dao.RegistroDiarioDao
 import com.example.granjaavicola.data.dao.SanidadDao
+import com.example.granjaavicola.data.dao.TarifaRetencionDao
 import com.example.granjaavicola.data.dao.TerceroDao
 import com.example.granjaavicola.data.dao.VentaDao
 import com.example.granjaavicola.data.entity.ActivoFijo
 import com.example.granjaavicola.data.entity.Compra
+import com.example.granjaavicola.data.entity.ConceptoCompra
 import com.example.granjaavicola.data.entity.Empleado
 import com.example.granjaavicola.data.entity.Estandar
 import com.example.granjaavicola.data.entity.Galpon
@@ -32,11 +36,13 @@ import com.example.granjaavicola.data.entity.Lote
 import com.example.granjaavicola.data.entity.MovimientoBancario
 import com.example.granjaavicola.data.entity.Pago
 import com.example.granjaavicola.data.entity.PagoNomina
+import com.example.granjaavicola.data.entity.ParametrosFiscales
 import com.example.granjaavicola.data.entity.PesajeAve
 import com.example.granjaavicola.data.entity.PesajeHuevo
 import com.example.granjaavicola.data.entity.ProduccionHuevo
 import com.example.granjaavicola.data.entity.RegistroDiario
 import com.example.granjaavicola.data.entity.Sanidad
+import com.example.granjaavicola.data.entity.TarifaRetencion
 import com.example.granjaavicola.data.entity.Tercero
 import com.example.granjaavicola.data.entity.Venta
 
@@ -59,6 +65,9 @@ import com.example.granjaavicola.data.entity.Venta
         Empleado::class,
         PagoNomina::class,
         ActivoFijo::class,
+        ConceptoCompra::class,
+        ParametrosFiscales::class,
+        TarifaRetencion::class,
     ],
     version = 1,
     exportSchema = true
@@ -83,6 +92,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun empleadoDao(): EmpleadoDao
     abstract fun pagoNominaDao(): PagoNominaDao
     abstract fun activoFijoDao(): ActivoFijoDao
+    abstract fun conceptoCompraDao(): ConceptoCompraDao
+    abstract fun parametrosFiscalesDao(): ParametrosFiscalesDao
+    abstract fun tarifaRetencionDao(): TarifaRetencionDao
 
     companion object {
         @Volatile

@@ -30,34 +30,32 @@ import com.example.granjaavicola.ui.levante.LotesViewModel
 import com.example.granjaavicola.ui.produccion.RegistroScreen
 import com.example.granjaavicola.ui.produccion.RegistroViewModel
 
-// Rutas adicionales
 private const val RUTA_NUEVO_LOTE = "nuevo_lote"
 private const val RUTA_DETALLE_LOTE = "detalle_lote/{loteId}"
 private const val RUTA_AJUSTES = "ajustes"
 private fun rutaDetalleLote(id: Long) = "detalle_lote/$id"
 
-// Pantalla contenedora principal con barra de navegación inferior
 @Composable
 fun NavegacionPrincipal() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val rutaActual = navBackStackEntry?.destination?.route
 
-    // Destinos de la barra inferior (sólo los que tienen ícono)
     val destinosBarraInferior = DestinoNavegacion.entries
 
-    // Determinar si la barra inferior debe ocultarse (en sub-pantallas de lotes y ajustes)
     val mostrarBarraInferior = rutaActual != RUTA_NUEVO_LOTE &&
-        rutaActual != RUTA_AJUSTES &&
-        rutaActual?.startsWith("detalle_lote/") != true
+            rutaActual != RUTA_AJUSTES &&
+            rutaActual?.startsWith("detalle_lote/") != true
 
-    // Instanciar los ViewModels una sola vez para los módulos correspondientes
     val context = LocalContext.current
     val container = (context.applicationContext as GranjaApp).container
     val lotesViewModel: LotesViewModel = viewModel(
         factory = LotesViewModel.factory(
             loteRepository = container.loteRepository,
-            galponRepository = container.galponRepository
+            galponRepository = container.galponRepository,
+            registroDiarioRepository = container.registroDiarioRepository,
+            estandarRepository = container.estandarRepository,
+            preferenciasRepository = container.preferenciasRepository
         )
     )
     val registroViewModel: RegistroViewModel = viewModel(

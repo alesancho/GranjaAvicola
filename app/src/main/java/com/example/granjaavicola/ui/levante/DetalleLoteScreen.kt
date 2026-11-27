@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,8 +47,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.granjaavicola.data.entity.EstadoLote
+import com.example.granjaavicola.domain.calculos.FilaSemanaLevante
 import com.example.granjaavicola.util.formatearCOP
 import com.example.granjaavicola.util.formatearFecha
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +66,6 @@ fun DetalleLoteScreen(
 
     val estado by viewModel.detalleState.collectAsStateWithLifecycle()
 
-    // Volver cuando el lote se cierra exitosamente
     LaunchedEffect(estado.cerradoExitoso) {
         if (estado.cerradoExitoso) onNavigateBack()
     }
@@ -125,7 +127,7 @@ fun DetalleLoteScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // ── Tarjeta de estado ─────────────────────────────────────────────
+            // Tarjeta de estado
             item {
                 val etiquetaEstado = when (lote.estado) {
                     EstadoLote.LEVANTE -> "Levante"
@@ -156,7 +158,7 @@ fun DetalleLoteScreen(
                 }
             }
 
-            // ── Datos del lote ────────────────────────────────────────────────
+            // Datos del lote
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
@@ -192,7 +194,35 @@ fun DetalleLoteScreen(
                 }
             }
 
-            // ── Error de cierre ───────────────────────────────────────────────
+            // Resumen semanal de levante (semanas 1 a 18)
+            if (lote.estado == EstadoLote.LEVANTE && estado.resumenSemanalLevante.isNotEmpty()) {
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "Resumen semanal de levante (Sem. 1–18)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Aves vivas, mortalidad, consumo y comparación con estándar.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            HorizontalDivider()
+                            estado.resumenSemanalLevante.forEach { fila ->
+                                TarjetaSemanaLevante(fila = fila)
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Error de cierre
             estado.errorCierre?.let { mensajeError ->
                 item {
                     Text(
@@ -203,7 +233,7 @@ fun DetalleLoteScreen(
                 }
             }
 
-            // ── Botón trasladar a producción (solo LEVANTE) ───────────────────
+            // Botón trasladar a producción (solo LEVANTE)
             if (lote.estado == EstadoLote.LEVANTE) {
                 item {
                     Button(
@@ -225,7 +255,7 @@ fun DetalleLoteScreen(
                 }
             }
 
-            // ── Botón cerrar lote ─────────────────────────────────────────────
+            // Botón cerrar lote
             if (lote.estado != EstadoLote.CERRADO) {
                 item {
                     Button(
@@ -251,7 +281,7 @@ fun DetalleLoteScreen(
         }
     }
 
-    // ── Diálogo de confirmación de cierre ─────────────────────────────────────
+    // Diálogo de confirmación de cierre
     if (estado.mostrandoConfirmacionCierre) {
         AlertDialog(
             onDismissRequest = { viewModel.mostrarConfirmacionCierre(false) },
@@ -288,7 +318,7 @@ fun DetalleLoteScreen(
         )
     }
 
-    // ── Diálogo de traslado a producción ──────────────────────────────────────
+    // Diálogo de traslado a producción
     var mostrarDatePickerTraslado by rememberSaveable { mutableStateOf(false) }
 
     if (estado.mostrandoDialogoTraslado) {
@@ -383,5 +413,73 @@ private fun FilaDato(etiqueta: String, valor: String) {
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+@Composable
+private fun TarjetaSemanaLevante(fila: FilaSemanaLevante) {
+    val fmtDecimal = remember { Locale("es", "CO") }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Semana ${fila.semana}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "${formatearFecha(fila.fechaInicio)} - ${formatearFecha(fila.fechaFin)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Text(
+            text = "Aves: ${fila.avesInicioSemana} → ${fila.avesFinSemana} | Muertes: ${fila.mortalidadSemana} (${String.format(fmtDecimal, "%.1f", fila.porcentajeMortalidad)}%) | Descarte: ${fila.descarteSemana}",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        Text(
+            text = "Consumo: ${String.format(fmtDecimal, "%.1f", fila.consumoTotalKg)} kg (${fila.diasRegistrados}d) | Prom. día: ${String.format(fmtDecimal, "%.1f", fila.consumoPromedioDiarioKg)} kg",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        val textoEstandarConsumo = fila.consumoGramosAveDiaEstandar?.let {
+            "Est. ${String.format(fmtDecimal, "%.1f", it)} g"
+        } ?: "Est. —"
+        val textoEstandarPeso = fila.pesoPromedioEstandarG?.let {
+            " | Peso est. ${String.format(fmtDecimal, "%.0f", it)} g"
+        } ?: ""
+
+        Text(
+            text = "Real: ${String.format(fmtDecimal, "%.1f", fila.consumoGramosAveDiaReal)} g/ave/día ($textoEstandarConsumo)$textoEstandarPeso",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
+
+        if (fila.costoAlimentoSemanalCop > 0L) {
+            Text(
+                text = "Costo alimento semana: ${formatearCOP(fila.costoAlimentoSemanalCop)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        fila.alertas.forEach { alerta ->
+            Text(
+                text = "⚠ $alerta",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
     }
 }

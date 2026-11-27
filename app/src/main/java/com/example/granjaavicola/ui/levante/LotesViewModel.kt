@@ -4,10 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.granjaavicola.data.entity.EstadoLote
+import com.example.granjaavicola.data.entity.FaseEstandar
 import com.example.granjaavicola.data.entity.Galpon
 import com.example.granjaavicola.data.entity.Lote
+import com.example.granjaavicola.data.preferences.PreferenciasRepository
+import com.example.granjaavicola.data.repository.EstandarRepository
 import com.example.granjaavicola.data.repository.GalponRepository
 import com.example.granjaavicola.data.repository.LoteRepository
+import com.example.granjaavicola.data.repository.RegistroDiarioRepository
+import com.example.granjaavicola.domain.calculos.FilaSemanaLevante
+import com.example.granjaavicola.domain.calculos.calcularResumenSemanalLevante
 import com.example.granjaavicola.domain.calculos.edadEnSemanas
 import com.example.granjaavicola.domain.calculos.validarFechaTraslado
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,16 +28,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-// ─── Filtros de estado ────────────────────────────────────────────────────────
-
 enum class FiltroEstado(val etiqueta: String) {
     TODOS("Todos"),
     LEVANTE("Levante"),
     PRODUCCION("Producción"),
     CERRADO("Cerrado")
 }
-
-// ─── UI State de la lista ────────────────────────────────────────────────────
 
 data class ItemLote(
     val lote: Lote,
@@ -45,8 +47,6 @@ data class ListaLotesUiState(
     val cargando: Boolean = true
 )
 
-// ─── UI State del formulario ─────────────────────────────────────────────────
-
 data class FormularioLoteUiState(
     val numeroLote: String = "",
     val galponId: Long? = null,
@@ -58,11 +58,9 @@ data class FormularioLoteUiState(
     val lineaGenetica: String = "",
     val proveedor: String = "",
     val costoPorPollita: String = "",
-    // Nuevo galpón inline
     val mostrandoNuevoGalpon: Boolean = false,
     val nuevoGalponNombre: String = "",
     val nuevoGalponCapacidad: String = "",
-    // Validaciones
     val errorNumeroLote: String? = null,
     val errorGalpon: String? = null,
     val errorFechaNacimiento: String? = null,
@@ -77,12 +75,11 @@ data class FormularioLoteUiState(
     val errorGeneral: String? = null
 )
 
-// ─── UI State del detalle ────────────────────────────────────────────────────
-
 data class DetalleLoteUiState(
     val lote: Lote? = null,
     val nombreGalpon: String = "",
     val edadSemanas: Int = 0,
+    val resumenSemanalLevante: List<FilaSemanaLevante> = emptyList(),
     val cargando: Boolean = true,
     val mostrandoConfirmacionCierre: Boolean = false,
     val cerradoExitoso: Boolean = false,
@@ -92,14 +89,13 @@ data class DetalleLoteUiState(
     val errorTraslado: String? = null
 )
 
-// ─── ViewModel ───────────────────────────────────────────────────────────────
-
 class LotesViewModel(
     private val loteRepository: LoteRepository,
-    private val galponRepository: GalponRepository
+    private val galponRepository: GalponRepository,
+    private val registroDiarioRepository: RegistroDiarioRepository? = null,
+    private val estandarRepository: EstandarRepository? = null,
+    private val preferenciasRepository: PreferenciasRepository? = null
 ) : ViewModel() {
-
-    // ── Lista con filtro ──────────────────────────────────────────────────────
 
     private val _filtro = MutableStateFlow(FiltroEstado.TODOS)
 
@@ -138,12 +134,9 @@ class LotesViewModel(
         _filtro.value = filtro
     }
 
-    // ── Formulario ────────────────────────────────────────────────────────────
-
     private val _formularioState = MutableStateFlow(FormularioLoteUiState())
     val formularioState: StateFlow<FormularioLoteUiState> = _formularioState
 
-    // Colección reactiva de galpones para el formulario
     init {
         viewModelScope.launch {
             galponRepository.allGalpones.collect { galpones ->
@@ -245,7 +238,6 @@ class LotesViewModel(
         val estado = _formularioState.value
         var valido = true
 
-        // Validaciones
         if (estado.numeroLote.isBlank()) {
             _formularioState.value = estado.copy(errorNumeroLote = "El número de lote es obligatorio")
             valido = false
@@ -290,7 +282,6 @@ class LotesViewModel(
 
         viewModelScope.launch {
             try {
-                // Verificar número de lote duplicado
                 val numeroBuscado = estado.numeroLote.trim()
                 val listaLotes = loteRepository.allLotes.first()
                 val duplicado = listaLotes.any { it.numeroLote.equals(numeroBuscado, ignoreCase = true) }
@@ -335,12 +326,11 @@ class LotesViewModel(
         )
     }
 
-    // ── Detalle ───────────────────────────────────────────────────────────────
-
     private val _detalleState = MutableStateFlow(DetalleLoteUiState())
     val detalleState: StateFlow<DetalleLoteUiState> = _detalleState
     private var cargarLoteJob: Job? = null
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun cargarLote(loteId: Long) {
         cargarLoteJob?.cancel()
         _detalleState.value = DetalleLoteUiState(
@@ -349,26 +339,53 @@ class LotesViewModel(
             mostrandoConfirmacionCierre = false
         )
         cargarLoteJob = viewModelScope.launch {
+            val registrosFlow = registroDiarioRepository?.getPorLote(loteId)
+                ?: MutableStateFlow(emptyList())
+
+            val estandaresFlow = if (estandarRepository != null && preferenciasRepository != null) {
+                preferenciasRepository.lineaActiva.flatMapLatest { linea ->
+                    estandarRepository.getPorLineaYFase(linea.codigo, FaseEstandar.LEVANTE)
+                }
+            } else {
+                MutableStateFlow(emptyList())
+            }
+
             combine(
                 loteRepository.getById(loteId),
-                galponRepository.allGalpones
-            ) { lote, galpones ->
-                lote to galpones
-            }.collect { (lote, galpones) ->
+                galponRepository.allGalpones,
+                registrosFlow,
+                estandaresFlow
+            ) { lote, galpones, registros, estandares ->
                 if (lote != null) {
                     val galpon = galpones.firstOrNull { it.id == lote.galponId }
-                    _detalleState.value = _detalleState.value.copy(
+                    val resumenLevante = if (lote.estado == EstadoLote.LEVANTE) {
+                        calcularResumenSemanalLevante(
+                            fechaNacimiento = lote.fechaNacimiento,
+                            avesIniciales = lote.avesIniciales,
+                            registros = registros,
+                            estandaresLevante = estandares,
+                            costoPromedioPorKgAlimento = 0.0,
+                            semanaMaxima = 18
+                        )
+                    } else {
+                        emptyList()
+                    }
+                    _detalleState.value.copy(
                         lote = lote,
                         nombreGalpon = galpon?.nombre ?: "—",
                         edadSemanas = edadEnSemanas(lote.fechaNacimiento, LocalDate.now()),
+                        resumenSemanalLevante = resumenLevante,
                         cargando = false
                     )
                 } else {
-                    _detalleState.value = _detalleState.value.copy(
+                    _detalleState.value.copy(
                         lote = null,
+                        resumenSemanalLevante = emptyList(),
                         cargando = false
                     )
                 }
+            }.collect { nuevoEstado ->
+                _detalleState.value = nuevoEstado
             }
         }
     }
@@ -449,16 +466,23 @@ class LotesViewModel(
         }
     }
 
-    // ── Factory ───────────────────────────────────────────────────────────────
-
     companion object {
         fun factory(
             loteRepository: LoteRepository,
-            galponRepository: GalponRepository
+            galponRepository: GalponRepository,
+            registroDiarioRepository: RegistroDiarioRepository? = null,
+            estandarRepository: EstandarRepository? = null,
+            preferenciasRepository: PreferenciasRepository? = null
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                LotesViewModel(loteRepository, galponRepository) as T
+                LotesViewModel(
+                    loteRepository = loteRepository,
+                    galponRepository = galponRepository,
+                    registroDiarioRepository = registroDiarioRepository,
+                    estandarRepository = estandarRepository,
+                    preferenciasRepository = preferenciasRepository
+                ) as T
         }
     }
 }
